@@ -13,7 +13,7 @@ class DropDown extends Component {
                 <span>{this.props.title}</span>
                 <select onChange={this.handleChange} value={this.state.selectValue}>
                     <option value="">-----</option>
-                    {this.props.options.map(option => <option key={option.key} value={option.value}>{option.value}</option>)}
+                    {this.props.options.map(option => <option key={option} value={option}>{option}</option>)}
                 </select>
             </React.Fragment>
         );
