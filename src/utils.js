@@ -10,6 +10,26 @@ const hexToBytesArray = (hex) =>{
     return new Uint8Array(arr);
 };
 
+const byteArrayToHex = (byteArr) => {
+    var hex = "";
+    var byteStr;
+    byteArr.forEach(byte => {
+        byteStr = byte.toString(16).toUpperCase();
+        hex += byteStr.length === 2 ? byteStr : "0" + byteStr;
+    });
+
+    return hex;
+};
+
+const getByteArray = (source, start, size) => {
+    var bytes = [];
+    for(var i = start; i < start + size; i++){
+        bytes.push(source[i]);
+    }
+
+    return bytes;
+};
+
 const findIndexOf = (match, source, start, maxLength) =>{
 
     var found;
@@ -34,5 +54,7 @@ const findIndexOf = (match, source, start, maxLength) =>{
 
 export default {
     hexToBytesArray: hexToBytesArray,
-    findIndexOf: findIndexOf
+    findIndexOf: findIndexOf,
+    getByteArray: getByteArray,
+    byteArrayToHex: byteArrayToHex
 };

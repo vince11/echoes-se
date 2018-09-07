@@ -2,27 +2,17 @@ import React, {Component} from "react";
 
 class DropDown extends Component {
 
-    state = {
-        selectValue: ""
-    }
-
     render(){
-
         return (
             <React.Fragment>
-                <span>{this.props.title}</span>
-                <select onChange={this.handleChange} value={this.state.selectValue}>
+                <span>{this.props.dropdown.title}</span>
+                <select onChange={(e) => this.props.onChange(this.props.dropdown, e)} value={this.props.dropdown.selected}>
                     <option value="">-----</option>
-                    {this.props.options.map(option => <option key={option} value={option}>{option}</option>)}
+                    {this.props.dropdown.options.map(option => <option key={option} value={option}>{option}</option>)}
                 </select>
             </React.Fragment>
         );
     };
-
-    handleChange = (event) => {
-        this.setState({selectValue: event.target.value});
-        console.log(event.target.value);
-    }
 
 }
 
