@@ -12,28 +12,28 @@ class Editor extends Component {
         saveFile: [],
         hasInput: false,
         unitsCache: null,
-        dropDowns: [
-            {
+        dropDowns: {
+            unit: {
                 title: "Unit",
                 selected: "",
                 options: []
             },
-            {
+            item: {
                 title: "Held Item",
                 selected: "",
                 options: []
             },
-            {
+            forge: {
                 title: "Forge",
                 selected: "",
                 options: []
             },
-            {
+            unitClass: {
                 title: "Class",
                 selected: "",
                 options: []
             }
-        ],
+        },
         statBoxes: {
             lvl: {
                 title: "Level",
@@ -96,10 +96,11 @@ class Editor extends Component {
         return (
             <div>
                 <div>
-                    {this.state.dropDowns.map(dropdown => (
+                    {Object.keys(this.state.dropDowns).map(key => (
                         <DropDown 
-                            key={dropdown.title} 
-                            dropdown={dropdown}
+                            key={key}
+                            dropDownKey={key} 
+                            dropdown={this.state.dropDowns[key]}
                             onChange={this.handleDropDownChange}
                         />
                     ))}
@@ -142,12 +143,15 @@ class Editor extends Component {
             [0,1,2,3,4,5],
             unitClasses.map(uc => uc.name).sort()
         ];
-        var dropDowns = [];
-        this.state.dropDowns.forEach((e, i) => {
-            dropDowns.push({title: e.title, options:db[i], selected:""})
+
+        var dropDowns = {};
+
+        Object.keys(this.state.dropDowns).forEach((key, i) =>{
+            dropDowns[key] = {...this.state.dropDowns[key]};
+            dropDowns[key].options = db[i];
         });
 
-        this.setState({dropDowns:dropDowns, bindEvents: true});
+        this.setState({dropDowns});
     }
 
     loadUnits = () => {
@@ -165,33 +169,32 @@ class Editor extends Component {
         return [...unitsCache.keys()].sort();
     }
 
-    handleDropDownChange = (dropdown, event) => {
-        var ddCopy = [...this.state.dropDowns];
-        var index = ddCopy.indexOf(dropdown);
+    handleDropDownChange = (key, event) => {
 
-        if(index === 0){
-            this.populateDropDowns(ddCopy, event.target.value);
+        if(key === "unit"){
+            this.populateDropDowns(event.target.value);
         }
-        else if(index === 1){
-            this.updateItem(ddCopy, event.target.value);
+        else if(key === "item"){
+            this.updateItem(event.target.value);
         }
-        else if(index === 2){
-            this.updateForge(ddCopy, event.target.value);
+        else if(key === "forge"){
+            this.updateForge(event.target.value);
         }
-        else if(index === 3){
-            this.updateClass(ddCopy, event.target.value);
+        else if(key === "unitClass"){
+            this.updateClass(event.target.value);
         }
     }
     
-    populateDropDowns(dropdowns, unitName){
+    populateDropDowns = (unitName) => {
 
+        var dropDowns = {...this.state.dropDowns};
         var statboxes = {...this.state.statBoxes};
+
         if(unitName !== ""){
 
-            dropdowns[0] = {...dropdowns[0]};
-            dropdowns[1] = {...dropdowns[1]};
-            dropdowns[2] = {...dropdowns[2]};
-            dropdowns[3] = {...dropdowns[3]};
+            Object.keys(dropDowns).forEach((key) =>{
+                dropDowns[key] = {...dropDowns[key]};
+            });
 
             var itemAddress = this.state.unitsCache.get(unitName).itemAddr;
             var itemBytes = editorUtils.getByteArray(this.state.saveFile, itemAddress, 8);
@@ -205,17 +208,17 @@ class Editor extends Component {
     
             var forgeCount = "";
             if(item.maxStars > 0){
-                dropdowns[2].options = [...Array(item.maxStars + 1).keys()];
+                dropDowns["forge"].options = [...Array(item.maxStars + 1).keys()];
                 forgeCount = this.state.saveFile[itemAddress - 1] >> 4;
             }
             else {
-                dropdowns[2].options = [];
+                dropDowns["forge"].options = [];
             }
 
-            dropdowns[0].selected = unitName;
-            dropdowns[1].selected = item.name;
-            dropdowns[2].selected = forgeCount;
-            dropdowns[3].selected = unitClass.name;
+            dropDowns["unit"].selected = unitName;
+            dropDowns["item"].selected = item.name;
+            dropDowns["forge"].selected = forgeCount;
+            dropDowns["unitClass"].selected = unitClass.name;
 
             var unitAddr = this.state.unitsCache.get(unitName).unitAddr;
             var unit = units.find(e => e.name === unitName);
@@ -237,22 +240,25 @@ class Editor extends Component {
             
         }
         else {
-            dropdowns.forEach((e, i) => {
-                dropdowns[i] = {...dropdowns[i]};
-                dropdowns[i].selected = "";
+            Object.keys(dropDowns).forEach((key) =>{
+                dropDowns[key] = {...dropDowns[key]};
+                dropDowns[key].selected = "";
             });
         }
 
-        this.setState({dropDowns: dropdowns, statBoxes: statboxes});
+        this.setState({dropDowns: dropDowns, statBoxes: statboxes});
 
     }
 
-    updateItem = (dropdowns, newItem) => {
+    updateItem = (newItem) => {
+
         if(newItem !== ""){
+            var dropDowns = {...this.state.dropDowns};
+
             var item = items.find((e) => e.name === newItem);
             var newItemHex = item.id + (item.isDLC ? "010008" : "000000") + item.hex;
             var newItemBytes = editorUtils.hexToBytesArray(newItemHex);
-            var newItemStart = this.state.unitsCache.get(dropdowns[0].selected).itemAddr - 4;
+            var newItemStart = this.state.unitsCache.get(dropDowns["unit"].selected).itemAddr - 4;
     
             var updatedSaveFile = [...this.state.saveFile];
             newItemBytes.forEach((e, i) => {
@@ -260,39 +266,44 @@ class Editor extends Component {
             });
     
             var forgeCount = "";
+            dropDowns["forge"] = {...dropDowns["forge"]};
+
             if(item.maxStars > 0){
-                dropdowns[2].options = [...Array(item.maxStars + 1).keys()];
+                dropDowns["forge"].options = [...Array(item.maxStars + 1).keys()];
                 forgeCount = 0
             }
             else{
-                dropdowns[2].options = [];
+                dropDowns["forge"].options = [];
             }
+
+            dropDowns["forge"].selected = forgeCount;
     
-            dropdowns[1] = {...dropdowns[1]};
-            dropdowns[1].selected = newItem;
-            dropdowns[2] = {...dropdowns[2]};
-            dropdowns[2].selected = forgeCount;
-    
-            this.setState({dropDowns: dropdowns, saveFile: updatedSaveFile});
+            dropDowns["item"] = {...dropDowns["item"]};
+            dropDowns["item"].selected = newItem;
+            
+            this.setState({dropDowns: dropDowns, saveFile: updatedSaveFile});
         }
     }
 
-    updateForge = (dropdowns, newForge) => {
+    updateForge = (newForge) => {
+
         if(newForge !== ""){
-            var forgeAddress = this.state.unitsCache.get(dropdowns[0].selected).itemAddr - 1;
+            var dropDowns = {...this.state.dropDowns};
+            var forgeAddress = this.state.unitsCache.get(dropDowns["unit"].selected).itemAddr - 1;
             var updatedSaveFile = [...this.state.saveFile];
             updatedSaveFile[forgeAddress] = (updatedSaveFile[forgeAddress] & 0x0F) | (newForge << 4);
     
-            dropdowns[2] = {...dropdowns[2]};
-            dropdowns[2].selected = newForge;
+            dropDowns["forge"] = {...dropDowns["forge"]};
+            dropDowns["forge"].selected = newForge;
     
-            this.setState({dropDowns: dropdowns, saveFile: updatedSaveFile});
+            this.setState({dropDowns: dropDowns, saveFile: updatedSaveFile});
         }
     }
 
-    updateClass = (dropdowns, newClass) => {
+    updateClass = (newClass) => {
         if(newClass !== ""){
-            var classAddr = this.state.unitsCache.get(dropdowns[0].selected).classAddr;
+            var dropDowns = {...this.state.dropDowns};
+            var classAddr = this.state.unitsCache.get(dropDowns["unit"].selected).classAddr;
             var unitClass = unitClasses.find(e => e.name === newClass);
             var newClassBytes = editorUtils.hexToBytesArray(unitClass.id);
 
@@ -301,22 +312,27 @@ class Editor extends Component {
                 updatedSaveFile[classAddr + i] = e;
             });
 
-            dropdowns[3] = {...dropdowns[3]};
-            dropdowns[3].selected = newClass;
+            dropDowns["unitClass"] = {...dropDowns["unitClass"]};
+            dropDowns["unitClass"].selected = newClass;
     
-            this.setState({dropDowns: dropdowns, saveFile: updatedSaveFile});
+            this.setState({dropDowns: dropDowns, saveFile: updatedSaveFile});
         }
     }
 
-    handleStatChange = (key, operation) => {
+    handleStatChange = (key, addOn) => {
         var updatedSaveFile = [...this.state.saveFile];
         var statBoxes = {...this.state.statBoxes};
         statBoxes[key] = {...statBoxes[key]};
-        statBoxes[key].currentValue = Math.max(statBoxes[key].minValue, Math.min(operation(statBoxes[key].currentValue), statBoxes[key].maxValue));
-        
 
-        var unitAddr = this.state.unitsCache.get(this.state.dropDowns[0].selected).unitAddr;
-        var unit = units.find(e => e.name === this.state.dropDowns[0].selected);
+        if(addOn.op !== null){
+            statBoxes[key].currentValue = Math.max(statBoxes[key].minValue, Math.min(addOn.op(statBoxes[key].currentValue), statBoxes[key].maxValue));
+        }
+        else{
+            statBoxes[key].currentValue = addOn.val;
+        }
+
+        var unitAddr = this.state.unitsCache.get(this.state.dropDowns["unit"].selected).unitAddr;
+        var unit = units.find(e => e.name === this.state.dropDowns["unit"].selected);
 
         if(key === "lvl"){
             updatedSaveFile[unitAddr - 2] = statBoxes[key].currentValue;
