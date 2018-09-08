@@ -1,5 +1,6 @@
 import React, {Component} from "react";
 import DropDown from "./dropDown";
+import StatBox from "./statBox";
 import units from "../resources/unitDB";
 import items from "../resources/itemDB";
 import unitClasses from "../resources/unitClassesDB";
@@ -32,7 +33,63 @@ class Editor extends Component {
                 selected: "",
                 options: []
             }
-        ]
+        ],
+        statBoxes: {
+            lvl: {
+                title: "Level",
+                currentValue: 1,
+                maxValue: 20,
+                minValue: 1,
+            },
+            exp: {
+                title: "Experience",
+                currentValue: 0,
+                maxValue: 99,
+                minValue: 0,
+            },
+            hp: {
+                title: "HP",
+                currentValue: 0,
+                maxValue: 0,
+                minValue: 0,
+            },
+            atk: {
+                title: "Attack",
+                currentValue: 0,
+                maxValue: 0,
+                minValue: 0,
+            },
+            skl: {
+                title: "Skill",
+                currentValue: 0,
+                maxValue: 0,
+                minValue: 0,
+            },
+            spd: {
+                title: "Speed",
+                currentValue: 0,
+                maxValue: 0,
+                minValue: 0,
+            },
+            lck: {
+                title: "Luck",
+                currentValue: 0,
+                maxValue: 0,
+                minValue: 0,
+            },
+            def: {
+                title: "Defense",
+                currentValue: 0,
+                maxValue: 0,
+                minValue: 0,
+            },
+            res: {
+                title: "Resistance",
+                currentValue: 0,
+                maxValue: 0,
+                minValue: 0,
+            }
+        }
     }
     
     render(){
@@ -44,6 +101,16 @@ class Editor extends Component {
                             key={dropdown.title} 
                             dropdown={dropdown}
                             onChange={this.handleDropDownChange}
+                        />
+                    ))}
+                </div>
+                <div>
+                    {Object.keys(this.state.statBoxes).map(key => (
+                        <StatBox 
+                            key={key}
+                            statBoxKey={key} 
+                            statbox={this.state.statBoxes[key]}
+                            handleStatChange={this.handleStatChange}
                         />
                     ))}
                 </div>
@@ -115,9 +182,10 @@ class Editor extends Component {
             this.updateClass(ddCopy, event.target.value);
         }
     }
-
+    
     populateDropDowns(dropdowns, unitName){
 
+        var statboxes = {...this.state.statBoxes};
         if(unitName !== ""){
 
             dropdowns[0] = {...dropdowns[0]};
@@ -148,6 +216,25 @@ class Editor extends Component {
             dropdowns[1].selected = item.name;
             dropdowns[2].selected = forgeCount;
             dropdowns[3].selected = unitClass.name;
+
+            var unitAddr = this.state.unitsCache.get(unitName).unitAddr;
+            var unit = units.find(e => e.name === unitName);
+            Object.keys(statboxes).forEach((key, index) => {
+                statboxes[key] = {...statboxes[key]};
+                if(key === "lvl"){
+                    statboxes[key].currentValue = this.state.saveFile[unitAddr - 2];
+                }
+                else if(key === "exp"){
+                    statboxes[key].currentValue = this.state.saveFile[unitAddr - 1];
+                }
+                else{
+                    statboxes[key].minValue = unit.baseStats[key];
+                    statboxes[key].maxValue = unit.maxStats[key];
+                    statboxes[key].currentValue = this.state.saveFile[unitAddr + 19 + index] + unit.baseStats[key];
+                }
+            });
+            
+            
         }
         else {
             dropdowns.forEach((e, i) => {
@@ -156,7 +243,7 @@ class Editor extends Component {
             });
         }
 
-        this.setState({dropDowns: dropdowns});
+        this.setState({dropDowns: dropdowns, statBoxes: statboxes});
 
     }
 
@@ -221,6 +308,28 @@ class Editor extends Component {
         }
     }
 
+    handleStatChange = (key, operation) => {
+        var updatedSaveFile = [...this.state.saveFile];
+        var statBoxes = {...this.state.statBoxes};
+        statBoxes[key] = {...statBoxes[key]};
+        statBoxes[key].currentValue = Math.max(statBoxes[key].minValue, Math.min(operation(statBoxes[key].currentValue), statBoxes[key].maxValue));
+        
+
+        var unitAddr = this.state.unitsCache.get(this.state.dropDowns[0].selected).unitAddr;
+        var unit = units.find(e => e.name === this.state.dropDowns[0].selected);
+
+        if(key === "lvl"){
+            updatedSaveFile[unitAddr - 2] = statBoxes[key].currentValue;
+        }
+        else if(key === "exp"){
+            updatedSaveFile[unitAddr - 1] = statBoxes[key].currentValue;
+        }
+        else{
+            updatedSaveFile[unitAddr + 19 + Object.keys(statBoxes).indexOf(key)] = statBoxes[key].currentValue - unit.baseStats[key];
+        }
+
+        this.setState({statBoxes: statBoxes, saveFile: updatedSaveFile});
+    }
 }
 
 export default Editor;
