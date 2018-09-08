@@ -11,27 +11,32 @@ class Editor extends Component {
     state = {
         saveFile: [],
         hasInput: false,
+        buttonsDisabled: true,
         unitsCache: null,
         dropDowns: {
             unit: {
                 title: "Unit",
                 selected: "",
-                options: []
+                options: [],
+                eventHandler: (e) => this.populateDropDowns(e.target.value)
             },
             item: {
                 title: "Held Item",
                 selected: "",
-                options: []
+                options: [],
+                eventHandler: (e) => this.updateItem(e.target.value)
             },
             forge: {
                 title: "Forge",
                 selected: "",
-                options: []
+                options: [],
+                eventHandler: (e) => this.updateForge(e.target.value)
             },
             unitClass: {
                 title: "Class",
                 selected: "",
-                options: []
+                options: [],
+                eventHandler: (e) => this.updateClass(e.target.value)
             }
         },
         statBoxes: {
@@ -99,9 +104,9 @@ class Editor extends Component {
                     {Object.keys(this.state.dropDowns).map(key => (
                         <DropDown 
                             key={key}
-                            dropDownKey={key} 
                             dropdown={this.state.dropDowns[key]}
-                            onChange={this.handleDropDownChange}
+                            onChange={this.state.dropDowns[key].eventHandler}
+                            disabled={(key==="unit") ? false : this.state.buttonsDisabled}
                         />
                     ))}
                 </div>
@@ -112,11 +117,15 @@ class Editor extends Component {
                             statBoxKey={key} 
                             statbox={this.state.statBoxes[key]}
                             handleStatChange={this.handleStatChange}
+                            disabled={this.state.buttonsDisabled}
                         />
                     ))}
                 </div>
                 <div>
-                    <input type="file" disabled={!this.state.hasInput ? "" : "disabled"} onChange={this.handleFileInput}/>
+                    <input type="file" disabled={this.state.hasInput} onChange={this.handleFileInput}/>
+                </div>
+                <div>
+                    <button type="submit" hidden={!this.state.hasInput}>Download</button>
                 </div>
             </div>
 
@@ -169,22 +178,6 @@ class Editor extends Component {
         return [...unitsCache.keys()].sort();
     }
 
-    handleDropDownChange = (key, event) => {
-
-        if(key === "unit"){
-            this.populateDropDowns(event.target.value);
-        }
-        else if(key === "item"){
-            this.updateItem(event.target.value);
-        }
-        else if(key === "forge"){
-            this.updateForge(event.target.value);
-        }
-        else if(key === "unitClass"){
-            this.updateClass(event.target.value);
-        }
-    }
-    
     populateDropDowns = (unitName) => {
 
         var dropDowns = {...this.state.dropDowns};
@@ -237,17 +230,14 @@ class Editor extends Component {
                 }
             });
             
-            
+            this.setState({dropDowns: dropDowns, statBoxes: statboxes, buttonsDisabled: false});
         }
-        else {
-            Object.keys(dropDowns).forEach((key) =>{
-                dropDowns[key] = {...dropDowns[key]};
-                dropDowns[key].selected = "";
-            });
+        else{
+            dropDowns["unit"] = {...dropDowns["unit"]};
+            dropDowns["unit"].selected = "";
+            this.setState({dropDowns: dropDowns, buttonsDisabled: true});
         }
-
-        this.setState({dropDowns: dropDowns, statBoxes: statboxes});
-
+        
     }
 
     updateItem = (newItem) => {

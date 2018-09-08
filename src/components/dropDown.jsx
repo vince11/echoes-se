@@ -6,7 +6,7 @@ class DropDown extends Component {
         return (
             <React.Fragment>
                 <span>{this.props.dropdown.title}</span>
-                <select onChange={(e) => this.props.onChange(this.props.dropDownKey, e)} value={this.props.dropdown.selected}>
+                <select onChange={this.props.onChange} value={this.props.dropdown.selected} disabled={this.props.disabled}>
                     <option value="">-----</option>
                     {this.props.dropdown.options.map(option => <option key={option} value={option}>{option}</option>)}
                 </select>
