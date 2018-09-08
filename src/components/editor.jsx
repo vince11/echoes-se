@@ -9,6 +9,7 @@ import editorUtils from "../utils";
 class Editor extends Component {
 
     state = {
+        saveFileName: "chapter",
         saveFile: [],
         hasInput: false,
         buttonsDisabled: true,
@@ -125,7 +126,7 @@ class Editor extends Component {
                     <input type="file" disabled={this.state.hasInput} onChange={this.handleFileInput}/>
                 </div>
                 <div>
-                    <button type="submit" hidden={!this.state.hasInput}>Download</button>
+                    <button type="submit" hidden={!this.state.hasInput} onClick={this.downloadFile}>Download</button>
                 </div>
             </div>
 
@@ -135,9 +136,10 @@ class Editor extends Component {
     handleFileInput = (event) => {
         if(event.target.files[0] != null){
             var fileReader = new FileReader();
+            var fileName = event.target.files[0].name;
             fileReader.onload = () => {
                 const buffer = fileReader.result;
-                this.setState({saveFile: new Uint8Array(buffer), hasInput: true});
+                this.setState({saveFileName: fileName, saveFile: new Uint8Array(buffer), hasInput: true});
                 this.loadData();
             };
             fileReader.readAsArrayBuffer(event.target.files[0]);
@@ -335,6 +337,22 @@ class Editor extends Component {
         }
 
         this.setState({statBoxes: statBoxes, saveFile: updatedSaveFile});
+    }
+
+    downloadFile = () => {
+        var blob = new Blob([new Uint8Array(this.state.saveFile)], {type: "application/octet-stream"});
+        //var file = btoa(String.fromCharCode.apply(null,new Uint8Array(this.state.saveFile)));
+        //var url = "data:application/octet-stream;base64," + encodeURIComponent(file);
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = this.state.saveFileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
     }
 }
 
